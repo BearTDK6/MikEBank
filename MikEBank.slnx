@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MikEBank.Api/MikEBank.Api.csproj" />
+  <Project Path="MikEBank.Web/MikEBank.Web.csproj" />
+</Solution>
