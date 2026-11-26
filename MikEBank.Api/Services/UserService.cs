@@ -21,24 +21,34 @@ public sealed class UserService(UserRepository repository)
         return user is null ? null : ToResponse(user);
     }
 
-    public async Task<UserResponse> CreateAsync(UserRequest request, CancellationToken cancellationToken)
+    public async Task<(UserResponse? User, Dictionary<string, string[]> Errors)> CreateAsync(
+        UserRequest request, CancellationToken cancellationToken)
     {
+        var errors = ValidateDates(request);
+        if (errors.Count > 0)
+            return (null, errors);
+
         var user = new User();
         ApplyRequest(user, request);
         repository.Add(user);
         await SaveUserAsync(cancellationToken);
-        return ToResponse(user);
+        return (ToResponse(user), errors);
     }
 
-    public async Task<UserResponse?> UpdateAsync(int id, UserRequest request, CancellationToken cancellationToken)
+    public async Task<(UserResponse? User, Dictionary<string, string[]> Errors)> UpdateAsync(
+        int id, UserRequest request, CancellationToken cancellationToken)
     {
+        var errors = ValidateDates(request);
+        if (errors.Count > 0)
+            return (null, errors);
+
         var user = await repository.GetByIdAsync(id, cancellationToken);
         if (user is null)
-            return null;
+            return (null, errors);
 
         ApplyRequest(user, request);
         await SaveUserAsync(cancellationToken);
-        return ToResponse(user);
+        return (ToResponse(user), errors);
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)
@@ -66,6 +76,19 @@ public sealed class UserService(UserRepository repository)
         {
             throw new DuplicateUserException(exception);
         }
+    }
+
+    private static Dictionary<string, string[]> ValidateDates(UserRequest request)
+    {
+        var errors = new Dictionary<string, string[]>();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+        if (request.DateOfBirth == default || request.DateOfBirth > today)
+            errors[nameof(request.DateOfBirth)] = ["Ngày sinh phải là ngày hợp lệ và không ở tương lai."];
+        if (request.DateOfIssue == default || request.DateOfIssue > today || request.DateOfIssue < request.DateOfBirth)
+            errors[nameof(request.DateOfIssue)] = ["Ngày cấp phải từ ngày sinh đến hôm nay."];
+        if (request.DateOfExpiry <= request.DateOfIssue)
+            errors[nameof(request.DateOfExpiry)] = ["Ngày hết hạn phải sau ngày cấp."];
+        return errors;
     }
 
     private static void ApplyRequest(User user, UserRequest request)

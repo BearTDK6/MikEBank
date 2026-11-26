@@ -20,24 +20,17 @@ public sealed class UsersController(UserService service) : ControllerBase
         return user is null ? NotFound() : Ok(user);
     }
 
-    [HttpGet("{id:int}/detail")]
-    public async Task<ActionResult<UserResponse>> GetDetail(int id, CancellationToken cancellationToken)
-    {
-        var user = await service.GetByIdAsync(id, cancellationToken);
-        return user is null ? NotFound() : Ok(user);
-    }
-
     [HttpPost]
     public async Task<ActionResult<UserResponse>> Create(
         UserRequest request, CancellationToken cancellationToken)
     {
-        ValidateDates(request);
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         try
         {
-            var user = await service.CreateAsync(request, cancellationToken);
+            var result = await service.CreateAsync(request, cancellationToken);
+            if (result.Errors.Count > 0)
+                return ValidationProblem(new ValidationProblemDetails(result.Errors));
+
+            var user = result.User ?? throw new InvalidOperationException("Không nhận được người dùng sau khi tạo.");
             return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
         }
         catch (DuplicateUserException ex)
@@ -50,14 +43,13 @@ public sealed class UsersController(UserService service) : ControllerBase
     public async Task<ActionResult<UserResponse>> Update(
         int id, UserRequest request, CancellationToken cancellationToken)
     {
-        ValidateDates(request);
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         try
         {
-            var user = await service.UpdateAsync(id, request, cancellationToken);
-            return user is null ? NotFound() : Ok(user);
+            var result = await service.UpdateAsync(id, request, cancellationToken);
+            if (result.Errors.Count > 0)
+                return ValidationProblem(new ValidationProblemDetails(result.Errors));
+
+            return result.User is null ? NotFound() : Ok(result.User);
         }
         catch (DuplicateUserException ex)
         {
@@ -68,16 +60,4 @@ public sealed class UsersController(UserService service) : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken) =>
         await service.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound();
-
-    private void ValidateDates(UserRequest request)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
-        if (request.DateOfBirth == default || request.DateOfBirth > today)
-            ModelState.AddModelError(nameof(request.DateOfBirth), "Ngày sinh phải là ngày hợp lệ và không ở tương lai.");
-        if (request.DateOfIssue == default || request.DateOfIssue > today || request.DateOfIssue < request.DateOfBirth)
-            ModelState.AddModelError(nameof(request.DateOfIssue), "Ngày cấp phải từ ngày sinh đến hôm nay.");
-        if (request.DateOfExpiry <= request.DateOfIssue)
-            ModelState.AddModelError(nameof(request.DateOfExpiry), "Ngày hết hạn phải sau ngày cấp.");
-    }
-
 }
