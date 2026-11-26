@@ -1,11 +1,67 @@
 @MikEBank.Api_HostAddress = http://localhost:5044
+@userId = 999999
 
-GET {{MikEBank.Api_HostAddress}}/openapi/v1.json
+### Chỉ dùng dữ liệu mẫu: API chưa có xác thực và phân quyền.
+### Thay userId bằng ID của một user thử nghiệm, không dùng ID của Admin.
+
+GET {{MikEBank.Api_HostAddress}}/swagger/v1/swagger.json
 Accept: application/json
 
 ###
 
-GET {{MikEBank.Api_HostAddress}}/weatherforecast/
+GET {{MikEBank.Api_HostAddress}}/api/users
 Accept: application/json
 
 ###
+
+GET {{MikEBank.Api_HostAddress}}/api/users/{{userId}}
+
+###
+
+GET {{MikEBank.Api_HostAddress}}/api/users/{{userId}}/detail
+
+###
+
+GET {{MikEBank.Api_HostAddress}}/api/users/999999
+
+###
+
+POST {{MikEBank.Api_HostAddress}}/api/users
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Van An",
+  "identityNumber": "012345678901",
+  "dateOfBirth": "1995-05-10",
+  "gender": "Nam",
+  "nationality": "Việt Nam",
+  "placeOfOrigin": "Hà Nội",
+  "placeOfResidence": "Hà Nội",
+  "dateOfIssue": "2021-01-01",
+  "dateOfExpiry": "2035-05-10",
+  "email": "an@example.com",
+  "phone": "0901234567"
+}
+
+###
+
+PUT {{MikEBank.Api_HostAddress}}/api/users/{{userId}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Van An",
+  "identityNumber": "012345678901",
+  "dateOfBirth": "1995-05-10",
+  "gender": "Nam",
+  "nationality": "Việt Nam",
+  "placeOfOrigin": "Hà Nội",
+  "placeOfResidence": "Hà Nội",
+  "dateOfIssue": "2021-01-01",
+  "dateOfExpiry": "2035-05-10",
+  "email": "an@example.com",
+  "phone": "0901234568"
+}
+
+###
+
+DELETE {{MikEBank.Api_HostAddress}}/api/users/{{userId}}
